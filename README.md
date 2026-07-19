@@ -4,7 +4,8 @@ This is a small Vercel serverless project. It does two things:
 
 1. Checks a license key against Payhip (safely, from the server — your Payhip
    secret key never appears in the app's public code).
-2. Remembers which devices have activated each key, and blocks a 3rd device.
+2. Remembers which devices have activated each key, and blocks a 3rd device,
+   using a Redis database.
 
 ## Deploy steps
 
@@ -13,17 +14,23 @@ This is a small Vercel serverless project. It does two things:
 2. In Vercel, click **Add New → Project**, import that repo, and deploy.
    Vercel will detect the `/api` folder automatically — no build config needed.
 3. In the Vercel dashboard, go to your new project → **Storage** tab →
-   **Create Database** → choose **KV** → connect it to this project. Vercel
-   will automatically add the KV environment variables for you.
-4. Go to **Settings → Environment Variables** and add two more:
+   under **Marketplace Database Providers**, find **Redis** → **Create**,
+   then **Connect Project** to link it to this project. This automatically
+   adds a connection-string environment variable (usually named `REDIS_URL`).
+4. Double check the exact variable name: go to **Settings → Environment
+   Variables** and look for whatever the Redis integration added (it should
+   look like `redis://default:xxxxx@xxxxx.redis-cloud.com:xxxxx`). If it's
+   *not* called `REDIS_URL`, open `api/activate.js` and `api/release-device.js`
+   and add its actual name to the `REDIS_URL` fallback list near the top.
+5. While you're in Environment Variables, add two more:
    - `PAYHIP_PRODUCT_SECRET_KEY` — from your Payhip product's edit page,
      in the license key section (only shows once you've checked
      "Generate unique license keys for each sale" and saved the product).
    - `MTO_ADMIN_SECRET` — any password you make up yourself. This lets you
      manually free up a device slot later if a customer gets a new phone.
-5. Redeploy (Vercel usually does this automatically after adding env vars).
-6. Copy your project's URL, e.g. `https://mto-activation-proxy.vercel.app`.
-   You'll need this for the next step — updating the main app to point at it.
+6. Redeploy (Vercel usually does this automatically after adding env vars).
+7. Copy your project's URL, e.g. `https://mto-activation-proxy.vercel.app`.
+   You'll need this to update the main app to point at it.
 
 ## Testing it
 
@@ -38,6 +45,10 @@ curl -X POST https://YOUR-PROJECT.vercel.app/api/activate \
 A valid, unused key should return `{"allowed":true,...}`. Running it again
 with a 3rd made-up `deviceId` (after two different ones have succeeded)
 should return `{"allowed":false,...}`.
+
+If you get a 500 error, check the Vercel function logs (Project → Deployments
+→ your deployment → Functions) — it usually means the Redis connection
+string env var name doesn't match what's in the code (see step 4 above).
 
 ## Freeing a device slot for a customer
 
