@@ -1,0 +1,9 @@
+{
+  "name": "mto-activation-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "License activation proxy for My Travel Organizer - checks Payhip license keys and enforces a per-key device limit.",
+  "dependencies": {
+    "@vercel/kv": "^1.0.1"
+  }
+}
